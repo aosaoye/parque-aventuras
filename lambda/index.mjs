@@ -1,20 +1,24 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { randomUUID } from "node:crypto";
 
 // Configuration
 const REGION = process.env.AWS_REGION || "us-east-1";
 const TABLE_NAME = process.env.TABLE_NAME || "ParkAdventure";
+const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN || "arn:aws:sns:us-east-1:131146365662:ParkAdventureTeam";
 
-// Initialize DynamoDB Client & Document Client (AWS SDK v3)
-const client = new DynamoDBClient({ region: REGION });
-const docClient = DynamoDBDocumentClient.from(client, {
+// Initialize AWS Clients (AWS SDK v3)
+const ddbClient = new DynamoDBClient({ region: REGION });
+const docClient = DynamoDBDocumentClient.from(ddbClient, {
   marshallOptions: {
     removeUndefinedValues: true,
   },
 });
 
-// Standard CORS Headers for API Gateway
+const snsClient = new SNSClient({ region: REGION });
+
+// CORS Headers for API Gateway
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
@@ -23,7 +27,7 @@ const corsHeaders = {
 };
 
 /**
- * Validates standard email address format
+ * Validates email format
  */
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,13 +35,47 @@ function isValidEmail(email) {
 }
 
 /**
- * Lambda Handler for POST /subcriptions via API Gateway
- * Table: ParkAdventure (arn:aws:dynamodb:us-east-1:131146365662:table/ParkAdventure)
+ * Formats notification body for ParkAdventureTeam SNS
+ */
+function formatNotificationMessage(item) {
+  return `
+=============================================
+🌲 NUEVA RESERVA EN PARK ADVENTURE 🌲
+=============================================
+
+Código de Reserva: ${item.subscriptionId}
+ID Interno:       ${item.id}
+Fecha Registro:   ${item.createdAt}
+Estado:           ${item.status}
+
+DATOS DEL CLIENTE:
+- Nombre:         ${item.name}
+- Email:          ${item.email}
+- Teléfono:       ${item.phone}
+
+DETALLES DE LA EXPERIENCIA:
+- Fecha Visita:   ${item.visitDate}
+- Circuito:       ${item.experience}
+- Aventureros:    ${item.adventurers} persona(s)
+- Guía Privado:   ${item.extraGuide ? 'SÍ (+15€)' : 'NO'}
+- Picnic Orgánico: ${item.extraLunch ? 'SÍ (+9€/pers)' : 'NO'}
+- Total Estimado: ${item.totalEstimatedPrice || 'A consultar en taquilla'}
+
+${item.notes ? `NOTAS ADICIONALES:\n${item.notes}\n` : ''}
+=============================================
+Notificación enviada automáticamente desde AWS Lambda.
+`.trim();
+}
+
+/**
+ * Lambda Handler for POST /subcriptions
+ * DynamoDB Table: arn:aws:dynamodb:us-east-1:131146365662:table/ParkAdventure
+ * SNS Topic:     arn:aws:sns:us-east-1:131146365662:ParkAdventureTeam
  */
 export const handler = async (event) => {
-  console.log("Received event:", JSON.stringify(event, null, 2));
+  console.log("Evento recibido:", JSON.stringify(event, null, 2));
 
-  // 1. Handle HTTP OPTIONS preflight request for CORS
+  // 1. CORS Preflight (OPTIONS)
   const httpMethod = event.httpMethod || event.requestContext?.http?.method;
   if (httpMethod === "OPTIONS") {
     return {
@@ -57,7 +95,7 @@ export const handler = async (event) => {
   }
 
   try {
-    // 2. Parse request payload safely
+    // 2. Parse request payload
     let rawBody = event.body;
     if (event.isBase64Encoded && rawBody) {
       rawBody = Buffer.from(rawBody, "base64").toString("utf-8");
@@ -102,7 +140,7 @@ export const handler = async (event) => {
     }
 
     if (!email || !isValidEmail(email)) {
-      errors.push("El campo 'email' es requerido y debe tener un formato válido.");
+      errors.push("El campo 'email' es requerido y debe tener formato válido.");
     }
 
     if (!phone || typeof phone !== "string" || phone.trim().length < 6) {
@@ -136,8 +174,8 @@ export const handler = async (event) => {
     const timestamp = new Date().toISOString();
 
     const item = {
-      id: uuid,                                    // Primary Key fallback
-      subscriptionId: subscriptionCode,            // Friendly code
+      id: uuid,
+      subscriptionId: subscriptionCode,
       name: name.trim(),
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
@@ -154,16 +192,30 @@ export const handler = async (event) => {
       source: "Landing Park Adventure",
     };
 
-    // 5. Put Item into DynamoDB Table 'ParkAdventure'
-    const command = new PutCommand({
+    // 5. Inserción en DynamoDB Table 'ParkAdventure'
+    const putCommand = new PutCommand({
       TableName: TABLE_NAME,
       Item: item,
     });
-
-    await docClient.send(command);
+    await docClient.send(putCommand);
     console.log(`[DynamoDB] Reserva guardada exitosamente: ${subscriptionCode} - ${item.email}`);
 
-    // 6. Return successful response (201 Created)
+    // 6. Publicación en SNS Topic 'ParkAdventureTeam'
+    try {
+      const snsPublishCommand = new PublishCommand({
+        TopicArn: SNS_TOPIC_ARN,
+        Subject: `🌿 ¡Nueva Reserva en Park Adventure! - ${subscriptionCode}`,
+        Message: formatNotificationMessage(item),
+      });
+
+      const snsResponse = await snsClient.send(snsPublishCommand);
+      console.log(`[SNS] Notificación enviada con éxito a ParkAdventureTeam. MessageId: ${snsResponse.MessageId}`);
+    } catch (snsError) {
+      // Registrar error de SNS sin bloquear la respuesta exitosa al usuario
+      console.error("[SNS Warning] Error al enviar notificación a SNS Topic:", snsError);
+    }
+
+    // 7. Respuesta exitosa (201 Created)
     return {
       statusCode: 201,
       headers: corsHeaders,
@@ -185,7 +237,7 @@ export const handler = async (event) => {
       }),
     };
   } catch (error) {
-    console.error("[DynamoDB Error] Error guardando reserva en DynamoDB:", error);
+    console.error("[Error Fatal] Error procesando la reserva:", error);
     return {
       statusCode: 500,
       headers: corsHeaders,
