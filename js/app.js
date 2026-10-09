@@ -104,15 +104,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initial calculation
   updatePrice();
 
-  // 5. Booking Form Submission & Ticket Modal
+  // 5. Booking Form Submission & API Gateway Integration
+  const API_ENDPOINT = 'https://etocy4tz5f.execute-api.us-east-1.amazonaws.com/dev/subcriptions';
   const bookingForm = document.getElementById('booking-form');
   const modal = document.getElementById('confirmation-modal');
   const closeModalBtn = document.getElementById('btn-close-modal');
   const downloadTicketBtn = document.getElementById('btn-download-ticket');
 
   if (bookingForm) {
-    bookingForm.addEventListener('submit', (e) => {
+    bookingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const submitBtn = bookingForm.querySelector('button[type="submit"]');
+      const originalBtnHTML = submitBtn ? submitBtn.innerHTML : '';
 
       const name = document.getElementById('booking-name').value;
       const email = document.getElementById('booking-email').value;
@@ -120,10 +124,65 @@ document.addEventListener('DOMContentLoaded', () => {
       const date = document.getElementById('booking-date').value;
       const selectedExp = experienceSelect.value;
       const expData = PRICES[selectedExp] || PRICES['campamento'];
+      const totalEstimated = priceDisplay ? priceDisplay.textContent : '';
+
+      // Prepare payload for Lambda & DynamoDB
+      const payload = {
+        name,
+        email,
+        phone,
+        date,
+        experience: selectedExp,
+        people: explorerCount,
+        count: explorerCount,
+        guide: checkGuide ? checkGuide.checked : false,
+        lunch: checkLunch ? checkLunch.checked : false,
+        totalPrice: totalEstimated
+      };
+
+      // Loading state on button
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-forest-950 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span>Conectando con Park Adventure...</span>
+        `;
+      }
+
+      let generatedCode = 'SLV-' + Math.floor(100000 + Math.random() * 900000);
+
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result && result.data && result.data.subscriptionId) {
+            generatedCode = result.data.subscriptionId;
+          }
+        } else {
+          console.warn('API Gateway returned status:', response.status);
+        }
+      } catch (err) {
+        console.warn('Could not reach API Gateway (network/CORS). Using offline confirmation code:', err);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHTML;
+          if (window.lucide) window.lucide.createIcons();
+        }
+      }
 
       // Populate confirmation ticket
-      const ticketCode = 'SLV-' + Math.floor(100000 + Math.random() * 900000);
-      document.getElementById('ticket-code').textContent = ticketCode;
+      document.getElementById('ticket-code').textContent = generatedCode;
       document.getElementById('ticket-name').textContent = name;
       document.getElementById('ticket-email').textContent = email;
       document.getElementById('ticket-phone').textContent = phone;
@@ -135,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       document.getElementById('ticket-activity').textContent = expData.name;
       document.getElementById('ticket-people').textContent = `${explorerCount} ${explorerCount === 1 ? 'persona' : 'personas'}`;
-      document.getElementById('ticket-total').textContent = priceDisplay.textContent;
+      document.getElementById('ticket-total').textContent = totalEstimated;
 
       // Show modal
       if (modal) {
