@@ -1,6 +1,6 @@
 /**
  * Silva - Parque de Aventuras
- * Three.js Interactive Low-Poly 3D World
+ * Cinematic Three.js Interactive 3D World with Mouse & Scroll Parallax
  */
 
 (function () {
@@ -12,61 +12,77 @@
   let worldGroup;
   let isDragging = false;
   let prevMousePos = { x: 0, y: 0 };
-  let targetRotation = { x: 0.35, y: -0.6 };
-  let currentRotation = { x: 0.35, y: -0.6 };
-  let cameraTarget = new THREE.Vector3(0, 0.5, 0);
-  let currentLookAt = new THREE.Vector3(0, 0.5, 0);
-  let cameraDistance = 14;
-  let targetCameraDistance = 14;
+  let baseRotation = { x: 0.32, y: -0.55 };
+  let currentRotation = { x: 0.32, y: -0.55 };
+  let targetRotation = { x: 0.32, y: -0.55 };
+  
+  // Parallax offsets
+  let mouseParallax = { x: 0, y: 0 };
+  let scrollOffset = 0;
+  
+  let cameraTarget = new THREE.Vector3(0.5, 0.6, 0);
+  let currentLookAt = new THREE.Vector3(0.5, 0.6, 0);
+  let cameraDistance = 13.5;
+  let targetCameraDistance = 13.5;
   let autoRotate = true;
+
+  // Dynamic objects
   let ziplineTrolley;
   let ziplineProgress = 0;
-  let deerHead;
+  let deerHead, deerGroup;
   let fireflyParticles;
-  let sunLight, hemiLight, campLight;
-  let currentTheme = 'day'; // 'day', 'sunset', 'night'
-  
-  // Interactive Hotspots coordinates in world space
+  let sunLight, hemiLight, campLight, ambientLight;
+  let currentTheme = 'day';
+
+  // Raycasting for interactive 3D clickable objects
+  let raycaster, mouse;
+  let interactiveMeshes = [];
+
+  // Hotspots definitions
   const HOTSPOTS = [
     {
       id: 'tirolina',
       title: 'Tirolina Superman 600m',
-      desc: 'Desciende a más de 75 km/h sobre el valle y las copas de los árboles con arnés doble homologado.',
+      desc: 'Vuela rasante a más de 80 km/h sobre el dosel vegetal con arnés continuo homologado.',
       difficulty: 'Media - Alta',
       height: '35 metros',
-      position: new THREE.Vector3(-2.8, 2.6, 1.2),
-      cameraTarget: new THREE.Vector3(-2.5, 2.2, 1.0),
-      camDistance: 8.5
+      target: new THREE.Vector3(-2.6, 2.3, 1.0),
+      camDist: 8.0,
+      rotY: -0.8,
+      rotX: 0.28
     },
     {
       id: 'puente',
-      title: 'Puente Tibetano Suspendido',
-      desc: 'Paso de equilibrio de 45 metros sobre el cañón con línea de vida continua y vistas panorámicas.',
+      title: 'Puente Tibetano Panorámico',
+      desc: 'Paso colgante de tablas sobre el cañón con vistas 360° del valle y línea continua.',
       difficulty: 'Familiar',
       height: '18 metros',
-      position: new THREE.Vector3(1.4, 1.3, -1.2),
-      cameraTarget: new THREE.Vector3(1.2, 1.0, -1.0),
-      camDistance: 8
+      target: new THREE.Vector3(1.2, 0.9, -1.0),
+      camDist: 7.8,
+      rotY: -0.3,
+      rotX: 0.25
     },
     {
       id: 'ciervo',
       title: 'Santuario de Ciervos & Fauna',
-      desc: 'Espacio de avistamiento y conservación ecológica donde habitan ciervos protegidos en semilibertad.',
-      difficulty: 'Para todos los públicos',
+      desc: 'Espacio de reserva natural donde habitan ciervos protegidos en semilibertad.',
+      difficulty: 'Todas las edades',
       height: 'Nivel del suelo',
-      position: new THREE.Vector3(2.5, 0.4, 1.8),
-      cameraTarget: new THREE.Vector3(2.4, 0.5, 1.5),
-      camDistance: 7.5
+      target: new THREE.Vector3(2.4, 0.5, 1.6),
+      camDist: 7.0,
+      rotY: -1.1,
+      rotX: 0.22
     },
     {
       id: 'campamento',
-      title: 'Campamento Base & Merendero',
-      desc: 'Punto de partida con zona de descanso, fogata segura, alquiler de equipos y briefings de seguridad.',
+      title: 'Campamento Base & Fuego',
+      desc: 'Punto de reunión, equipamiento técnico, bebidas ecológicas y briefing de seguridad.',
       difficulty: 'Punto de Encuentro',
       height: 'Nivel del suelo',
-      position: new THREE.Vector3(-0.6, 0.35, 2.4),
-      cameraTarget: new THREE.Vector3(-0.5, 0.4, 2.0),
-      camDistance: 7.5
+      target: new THREE.Vector3(-0.6, 0.45, 2.2),
+      camDist: 7.2,
+      rotY: -0.2,
+      rotX: 0.22
     }
   ];
 
@@ -76,12 +92,12 @@
 
     // 1. Scene
     scene = new THREE.Scene();
-    scene.background = null; // Transparent to blend with modern card backdrop
+    scene.fog = new THREE.FogExp2(0x04170f, 0.025); // Subtle deep forest mist
 
     // 2. Camera
     const aspect = container.clientWidth / container.clientHeight;
-    camera = new THREE.PerspectiveCamera(40, aspect, 0.1, 1000);
-    camera.position.set(0, 7, cameraDistance);
+    camera = new THREE.PerspectiveCamera(38, aspect, 0.1, 1000);
+    camera.position.set(2, 6, cameraDistance);
     camera.lookAt(cameraTarget);
 
     // 3. Renderer
@@ -92,10 +108,14 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    // 4. Lighting
+    // 4. Raycaster
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
+    // 5. Lighting
     setupLighting();
 
-    // 5. Build 3D World (Procedural Low-Poly Nature & Adventure Park)
+    // 6. Build 3D World
     worldGroup = new THREE.Group();
     scene.add(worldGroup);
 
@@ -109,30 +129,34 @@
     buildCampfireAndTent();
     buildFloatingFireflies();
 
-    // 6. Setup Events & Interactions
+    // 7. Events
     setupControls();
     window.addEventListener('resize', onWindowResize);
+    window.addEventListener('scroll', onScrollParallax, { passive: true });
 
-    // 7. Update UI Hotspot Badges
+    // 8. Hotspots and UI bindings
     setupHotspotTriggers();
 
-    // 8. Start Loop
+    // 9. Start Loop
     animate();
   }
 
   // --- LIGHTING ---
   function setupLighting() {
-    hemiLight = new THREE.HemisphereLight(0xdcfce7, 0x064e3b, 0.9);
+    ambientLight = new THREE.AmbientLight(0x064e3b, 0.7);
+    scene.add(ambientLight);
+
+    hemiLight = new THREE.HemisphereLight(0xdcfce7, 0x04170f, 1.0);
     scene.add(hemiLight);
 
-    sunLight = new THREE.DirectionalLight(0xfffbeb, 1.4);
-    sunLight.position.set(12, 18, 10);
+    sunLight = new THREE.DirectionalLight(0xfffbeb, 1.6);
+    sunLight.position.set(14, 20, 12);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
     sunLight.shadow.camera.near = 0.5;
-    sunLight.shadow.camera.far = 40;
-    const d = 8;
+    sunLight.shadow.camera.far = 45;
+    const d = 9;
     sunLight.shadow.camera.left = -d;
     sunLight.shadow.camera.right = d;
     sunLight.shadow.camera.top = d;
@@ -140,140 +164,136 @@
     sunLight.shadow.bias = -0.0005;
     scene.add(sunLight);
 
-    // Subtle soft fill light
-    const fillLight = new THREE.DirectionalLight(0xa7f3d0, 0.4);
-    fillLight.position.set(-10, 8, -10);
+    // Soft cyan fill light
+    const fillLight = new THREE.DirectionalLight(0x6ee7b7, 0.45);
+    fillLight.position.set(-12, 8, -10);
     scene.add(fillLight);
 
     // Campfire point light
-    campLight = new THREE.PointLight(0xf59e0b, 1.2, 5, 2);
-    campLight.position.set(-0.6, 0.6, 2.4);
+    campLight = new THREE.PointLight(0xf59e0b, 1.5, 6, 2);
+    campLight.position.set(-0.6, 0.65, 2.4);
     scene.add(campLight);
   }
 
-  // --- PROCEDURAL 3D ASSETS ---
+  // --- 3D ENVIRONMENT ---
   function buildTerrain() {
-    // Multi-layered floating island base
-    // Main top green meadow
-    const topGeo = new THREE.CylinderGeometry(5.4, 5.8, 0.7, 16);
+    // Upper meadow
+    const topGeo = new THREE.CylinderGeometry(5.8, 6.2, 0.8, 18);
     const topMat = new THREE.MeshStandardMaterial({
-      color: 0x22c55e, // Vibrant nature green
+      color: 0x16a34a,
       flatShading: true,
-      roughness: 0.8
+      roughness: 0.75
     });
     const topMesh = new THREE.Mesh(topGeo, topMat);
     topMesh.receiveShadow = true;
     topMesh.castShadow = true;
     worldGroup.add(topMesh);
 
-    // Sub-layer cliff / stone
-    const cliffGeo = new THREE.CylinderGeometry(5.8, 4.2, 1.5, 14);
+    // Cliff rock layer
+    const cliffGeo = new THREE.CylinderGeometry(6.2, 4.4, 1.6, 16);
     const cliffMat = new THREE.MeshStandardMaterial({
-      color: 0x334155, // slate rock
-      flatShading: true,
-      roughness: 0.9
-    });
-    const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
-    cliffMesh.position.y = -0.9;
-    cliffMesh.receiveShadow = true;
-    cliffMesh.castShadow = true;
-    worldGroup.add(cliffMesh);
-
-    // Bottom root floating point
-    const botGeo = new THREE.ConeGeometry(4.2, 2.2, 10);
-    const botMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
       flatShading: true,
       roughness: 0.95
     });
+    const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
+    cliffMesh.position.y = -1.0;
+    cliffMesh.receiveShadow = true;
+    cliffMesh.castShadow = true;
+    worldGroup.add(cliffMesh);
+
+    // Floating bedrock cone
+    const botGeo = new THREE.ConeGeometry(4.4, 2.5, 12);
+    const botMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      flatShading: true,
+      roughness: 0.98
+    });
     const botMesh = new THREE.Mesh(botGeo, botMat);
     botMesh.rotation.x = Math.PI;
-    botMesh.position.y = -2.7;
+    botMesh.position.y = -3.0;
     botMesh.castShadow = true;
     worldGroup.add(botMesh);
 
-    // Upper hills/mounds for elevation
-    const hillMat1 = new THREE.MeshStandardMaterial({ color: 0x16a34a, flatShading: true });
-    const hillMat2 = new THREE.MeshStandardMaterial({ color: 0x4ade80, flatShading: true });
+    // Green mounds & hill contours
+    const hillMat1 = new THREE.MeshStandardMaterial({ color: 0x15803d, flatShading: true });
+    const hillMat2 = new THREE.MeshStandardMaterial({ color: 0x22c55e, flatShading: true });
 
-    const hill1 = new THREE.Mesh(new THREE.ConeGeometry(2.4, 1.8, 8), hillMat1);
-    hill1.position.set(-2.8, 0.9, -1.2);
+    const hill1 = new THREE.Mesh(new THREE.ConeGeometry(2.6, 2.0, 9), hillMat1);
+    hill1.position.set(-3.0, 1.0, -1.3);
     hill1.castShadow = true;
     hill1.receiveShadow = true;
     worldGroup.add(hill1);
 
-    const hill2 = new THREE.Mesh(new THREE.ConeGeometry(2.1, 1.4, 7), hillMat2);
-    hill2.position.set(2.6, 0.7, -1.6);
+    const hill2 = new THREE.Mesh(new THREE.ConeGeometry(2.2, 1.5, 8), hillMat2);
+    hill2.position.set(2.8, 0.8, -1.8);
     hill2.castShadow = true;
     hill2.receiveShadow = true;
     worldGroup.add(hill2);
 
-    const hill3 = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.9, 0.8, 8), hillMat1);
-    hill3.position.set(-2.8, 0.6, 1.2);
-    hill3.castShadow = true;
-    hill3.receiveShadow = true;
-    worldGroup.add(hill3);
+    const platformMound = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.1, 0.9, 9), hillMat1);
+    platformMound.position.set(-2.8, 0.7, 1.3);
+    platformMound.castShadow = true;
+    platformMound.receiveShadow = true;
+    worldGroup.add(platformMound);
   }
 
   function buildRiver() {
-    // Stylized curving river cut through the island
-    const riverGeo = new THREE.BoxGeometry(1.1, 0.08, 9.8);
+    const riverGeo = new THREE.BoxGeometry(1.2, 0.1, 10.4);
     const riverMat = new THREE.MeshStandardMaterial({
       color: 0x38bdf8,
-      roughness: 0.15,
-      metalness: 0.2,
+      roughness: 0.1,
+      metalness: 0.25,
       transparent: true,
-      opacity: 0.88
+      opacity: 0.9
     });
     const river = new THREE.Mesh(riverGeo, riverMat);
-    river.rotation.y = 0.45;
-    river.position.set(0.2, 0.36, -0.2);
+    river.rotation.y = 0.42;
+    river.position.set(0.2, 0.42, -0.2);
     river.receiveShadow = true;
     worldGroup.add(river);
 
-    // River stepping stones
-    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, flatShading: true });
+    // Stepping stones
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x64748b, flatShading: true });
     [
-      { x: -0.6, z: 0.6, r: 0.22 },
-      { x: 0.1, z: 0.1, r: 0.28 },
-      { x: 0.8, z: -0.5, r: 0.24 }
+      { x: -0.6, z: 0.6, r: 0.24 },
+      { x: 0.1, z: 0.1, r: 0.29 },
+      { x: 0.8, z: -0.5, r: 0.25 }
     ].forEach(st => {
       const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(st.r, 0), stoneMat);
-      stone.position.set(st.x, 0.45, st.z);
+      stone.position.set(st.x, 0.48, st.z);
       stone.scale.set(1.2, 0.6, 1);
       stone.castShadow = true;
       worldGroup.add(stone);
     });
   }
 
-  function createPineTree(x, z, scale = 1, tint = 0x15803d) {
+  function createPineTree(x, z, scale = 1, tint = 0x14532d) {
     const treeGroup = new THREE.Group();
-    treeGroup.position.set(x, 0.35, z);
+    treeGroup.position.set(x, 0.4, z);
     treeGroup.scale.set(scale, scale, scale);
 
-    // Trunk
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, flatShading: true });
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.9, 6), trunkMat);
-    trunk.position.y = 0.45;
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 1.0, 6), trunkMat);
+    trunk.position.y = 0.5;
     trunk.castShadow = true;
     treeGroup.add(trunk);
 
-    // Foliage cones (3 tiers)
     const foliageMat = new THREE.MeshStandardMaterial({ color: tint, flatShading: true });
-    const cone1 = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.0, 7), foliageMat);
-    cone1.position.y = 1.1;
-    cone1.castShadow = true;
-    treeGroup.add(cone1);
+    const c1 = new THREE.Mesh(new THREE.ConeGeometry(0.95, 1.1, 7), foliageMat);
+    c1.position.y = 1.2;
+    c1.castShadow = true;
+    treeGroup.add(c1);
 
-    const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.72, 0.85, 7), foliageMat);
-    cone2.position.y = 1.6;
-    cone2.castShadow = true;
-    treeGroup.add(cone2);
+    const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.9, 7), foliageMat);
+    c2.position.y = 1.75;
+    c2.castShadow = true;
+    treeGroup.add(c2);
 
-    const cone3 = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.7, 7), foliageMat);
-    cone3.position.y = 2.05;
-    cone3.castShadow = true;
-    treeGroup.add(cone3);
+    const c3 = new THREE.Mesh(new THREE.ConeGeometry(0.52, 0.75, 7), foliageMat);
+    c3.position.y = 2.25;
+    c3.castShadow = true;
+    treeGroup.add(c3);
 
     worldGroup.add(treeGroup);
     return treeGroup;
@@ -281,30 +301,28 @@
 
   function createBroadleafTree(x, z, scale = 1, foliageColor = 0x10b981) {
     const treeGroup = new THREE.Group();
-    treeGroup.position.set(x, 0.35, z);
+    treeGroup.position.set(x, 0.4, z);
     treeGroup.scale.set(scale, scale, scale);
 
-    // Trunk
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x854d0e, flatShading: true });
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 1.2, 6), trunkMat);
-    trunk.position.y = 0.6;
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1.3, 6), trunkMat);
+    trunk.position.y = 0.65;
     trunk.castShadow = true;
     treeGroup.add(trunk);
 
-    // Cloud-like low-poly foliage (Dodecahedrons cluster)
     const folMat = new THREE.MeshStandardMaterial({ color: foliageColor, flatShading: true });
-    const head1 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.85, 1), folMat);
-    head1.position.set(0, 1.6, 0);
+    const head1 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9, 1), folMat);
+    head1.position.set(0, 1.75, 0);
     head1.castShadow = true;
     treeGroup.add(head1);
 
-    const head2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6, 1), folMat);
-    head2.position.set(0.4, 1.45, 0.2);
+    const head2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.65, 1), folMat);
+    head2.position.set(0.42, 1.55, 0.22);
     head2.castShadow = true;
     treeGroup.add(head2);
 
-    const head3 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55, 1), folMat);
-    head3.position.set(-0.35, 1.5, -0.2);
+    const head3 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6, 1), folMat);
+    head3.position.set(-0.38, 1.6, -0.22);
     head3.castShadow = true;
     treeGroup.add(head3);
 
@@ -313,26 +331,22 @@
   }
 
   function buildTrees() {
-    // Cluster of pine and broadleaf trees around the island
-    const treeCoords = [
-      // Left high ridge
-      { type: 'pine', x: -3.8, z: -1.2, s: 1.25, c: 0x166534 },
-      { type: 'pine', x: -3.2, z: -2.3, s: 1.1, c: 0x15803d },
-      { type: 'pine', x: -2.2, z: -2.6, s: 1.4, c: 0x14532d },
-      { type: 'pine', x: -1.6, z: -3.2, s: 0.95, c: 0x166534 },
-      
-      // Broadleaf trees (lush forest greens, mint, and soft warm accent matching illustration)
-      { type: 'broad', x: -1.8, z: 0.2, s: 1.05, c: 0x059669 },
-      { type: 'broad', x: -3.6, z: 1.6, s: 0.9, c: 0x34d399 },
-      { type: 'broad', x: 2.2, z: -2.8, s: 1.3, c: 0x047857 },
-      { type: 'broad', x: 3.4, z: -1.6, s: 1.1, c: 0x10b981 },
-      { type: 'broad', x: 3.6, z: 0.4, s: 0.85, c: 0x6ee7b7 }, // mint accent
-      { type: 'pine', x: 1.6, z: -3.4, s: 1.15, c: 0x15803d },
-      { type: 'pine', x: 2.8, z: 2.4, s: 0.9, c: 0x166534 },
-      { type: 'broad', x: -1.4, z: 3.2, s: 0.8, c: 0x10b981 }
+    const trees = [
+      { type: 'pine', x: -4.0, z: -1.3, s: 1.3, c: 0x14532d },
+      { type: 'pine', x: -3.3, z: -2.4, s: 1.15, c: 0x166534 },
+      { type: 'pine', x: -2.3, z: -2.7, s: 1.45, c: 0x0f3b21 },
+      { type: 'pine', x: -1.7, z: -3.3, s: 1.0, c: 0x14532d },
+      { type: 'broad', x: -1.9, z: 0.2, s: 1.1, c: 0x059669 },
+      { type: 'broad', x: -3.7, z: 1.7, s: 0.95, c: 0x34d399 },
+      { type: 'broad', x: 2.3, z: -2.9, s: 1.35, c: 0x047857 },
+      { type: 'broad', x: 3.5, z: -1.7, s: 1.15, c: 0x10b981 },
+      { type: 'broad', x: 3.8, z: 0.5, s: 0.9, c: 0x6ee7b7 },
+      { type: 'pine', x: 1.7, z: -3.5, s: 1.2, c: 0x15803d },
+      { type: 'pine', x: 3.0, z: 2.5, s: 0.95, c: 0x166534 },
+      { type: 'broad', x: -1.5, z: 3.3, s: 0.85, c: 0x10b981 }
     ];
 
-    treeCoords.forEach(t => {
+    trees.forEach(t => {
       if (t.type === 'pine') {
         createPineTree(t.x, t.z, t.s, t.c);
       } else {
@@ -342,19 +356,16 @@
   }
 
   function buildBushesAndRocks() {
-    // Rocks & pastel foliage bushes (matching reference illustration touches)
-    const rockMat = new THREE.MeshStandardMaterial({ color: 0x64748b, flatShading: true });
-    const coralBushMat = new THREE.MeshStandardMaterial({ color: 0xfb7185, flatShading: true }); // Coral/pink flowers
-    const yellowBushMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, flatShading: true }); // Golden flowers
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x475569, flatShading: true });
+    const coralBushMat = new THREE.MeshStandardMaterial({ color: 0xfb7185, flatShading: true });
+    const goldBushMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, flatShading: true });
 
-    // Rocks scattered
-    const rockLocations = [
-      { x: -2.5, y: 0.45, z: 2.8, s: 0.4 },
-      { x: 3.2, y: 0.4, z: -0.6, s: 0.55 },
-      { x: -0.2, y: 0.4, z: -3.4, s: 0.5 },
-      { x: 1.8, y: 0.4, z: 2.8, s: 0.35 }
-    ];
-    rockLocations.forEach(r => {
+    [
+      { x: -2.6, y: 0.5, z: 2.9, s: 0.42 },
+      { x: 3.3, y: 0.45, z: -0.6, s: 0.58 },
+      { x: -0.2, y: 0.45, z: -3.5, s: 0.52 },
+      { x: 1.9, y: 0.45, z: 2.9, s: 0.38 }
+    ].forEach(r => {
       const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(r.s, 0), rockMat);
       rock.position.set(r.x, r.y, r.z);
       rock.rotation.set(Math.random(), Math.random(), Math.random());
@@ -363,277 +374,250 @@
       worldGroup.add(rock);
     });
 
-    // Coral & Yellow flora bushes
-    const flora = [
-      { x: -1.2, z: 1.2, m: coralBushMat, s: 0.28 },
-      { x: -2.2, z: 2.2, m: coralBushMat, s: 0.32 },
-      { x: 2.8, z: 1.2, m: coralBushMat, s: 0.3 },
-      { x: 0.8, z: 1.8, m: yellowBushMat, s: 0.25 },
-      { x: -3.0, z: -0.5, m: yellowBushMat, s: 0.26 }
-    ];
-    flora.forEach(f => {
+    [
+      { x: -1.2, z: 1.2, m: coralBushMat, s: 0.3 },
+      { x: -2.3, z: 2.3, m: coralBushMat, s: 0.34 },
+      { x: 2.9, z: 1.3, m: coralBushMat, s: 0.32 },
+      { x: 0.8, z: 1.9, m: goldBushMat, s: 0.28 },
+      { x: -3.1, z: -0.5, m: goldBushMat, s: 0.28 }
+    ].forEach(f => {
       const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(f.s, 1), f.m);
-      bush.position.set(f.x, 0.42, f.z);
+      bush.position.set(f.x, 0.45, f.z);
       bush.castShadow = true;
       worldGroup.add(bush);
     });
   }
 
-  // --- ADVENTURE ATTRACTIONS ---
-
-  // 1. Zipline Tower & Cable with Trolley
-  let ziplineStart = new THREE.Vector3(-2.8, 2.5, 1.2);
-  let ziplineEnd = new THREE.Vector3(2.4, 1.2, -2.4);
+  // --- ATTRACTIONS ---
+  let ziplineStart = new THREE.Vector3(-2.8, 2.6, 1.2);
+  let ziplineEnd = new THREE.Vector3(2.5, 1.3, -2.4);
 
   function buildZiplineTower() {
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x92400e, flatShading: true });
     const roofMat = new THREE.MeshStandardMaterial({ color: 0xb45309, flatShading: true });
 
-    // Tower 1 (High start station)
     const tower1 = new THREE.Group();
-    tower1.position.copy(ziplineStart);
-    tower1.position.y = 0.35; // base level
+    tower1.position.set(ziplineStart.x, 0.4, ziplineStart.z);
 
-    // 4 Stilts
-    for (let dx of [-0.25, 0.25]) {
-      for (let dz of [-0.25, 0.25]) {
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 6), woodMat);
-        pole.position.set(dx, 1.1, dz);
+    for (let dx of [-0.26, 0.26]) {
+      for (let dz of [-0.26, 0.26]) {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.3, 6), woodMat);
+        pole.position.set(dx, 1.15, dz);
         pole.castShadow = true;
         tower1.add(pole);
       }
     }
-    // Wooden platform
-    const platform = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.08, 0.85), woodMat);
-    platform.position.y = 2.15;
+
+    const platform = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.9), woodMat);
+    platform.position.y = 2.25;
     platform.castShadow = true;
     tower1.add(platform);
 
-    // Platform railings
-    const railing = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.25, 0.8), new THREE.MeshBasicMaterial({ wireframe: true, color: 0x78350f }));
-    railing.position.y = 2.3;
-    tower1.add(railing);
-
-    // Conical roof
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.5, 6), roofMat);
-    roof.position.y = 2.8;
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.55, 6), roofMat);
+    roof.position.y = 2.9;
     roof.castShadow = true;
     tower1.add(roof);
 
     worldGroup.add(tower1);
 
-    // Tower 2 (Arrival platform on tree)
+    // Arrival tree platform
     const tower2 = new THREE.Group();
-    tower2.position.set(ziplineEnd.x, 0.35, ziplineEnd.z);
-    const platform2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.08, 8), woodMat);
-    platform2.position.y = 0.9;
+    tower2.position.set(ziplineEnd.x, 0.4, ziplineEnd.z);
+    const platform2 = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 8), woodMat);
+    platform2.position.y = 0.95;
     platform2.castShadow = true;
     tower2.add(platform2);
     worldGroup.add(tower2);
 
-    // Zipline Cable
+    // Cable
     const cablePoints = [
       new THREE.Vector3(ziplineStart.x, ziplineStart.y + 0.1, ziplineStart.z),
-      new THREE.Vector3(ziplineEnd.x, 0.35 + 0.95, ziplineEnd.z)
+      new THREE.Vector3(ziplineEnd.x, 0.4 + 1.0, ziplineEnd.z)
     ];
     const cableGeo = new THREE.TubeGeometry(
       new THREE.LineCurve3(cablePoints[0], cablePoints[1]),
       20,
-      0.015,
+      0.016,
       6,
       false
     );
-    const cableMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.3 });
+    const cableMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 });
     const cableMesh = new THREE.Mesh(cableGeo, cableMat);
     worldGroup.add(cableMesh);
 
-    // Zipline trolley + little adventurer figure
+    // Trolley & Adventurer
     ziplineTrolley = new THREE.Group();
-    const trolleyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.08), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+    ziplineTrolley.userData = { id: 'tirolina' };
+    const trolleyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.08), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
     ziplineTrolley.add(trolleyMesh);
 
-    // Mini human adventurer
-    const adventurerMat = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
-    const adventurerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.22, 6), adventurerMat);
-    adventurerBody.position.y = -0.16;
+    const adventurerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.24, 6), new THREE.MeshStandardMaterial({ color: 0x3b82f6 }));
+    adventurerBody.position.y = -0.17;
     ziplineTrolley.add(adventurerBody);
 
-    const helmetMesh = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-    helmetMesh.position.y = -0.02;
-    ziplineTrolley.add(helmetMesh);
+    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 8), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
+    helmet.position.y = -0.02;
+    ziplineTrolley.add(helmet);
 
     ziplineTrolley.position.copy(cablePoints[0]);
     worldGroup.add(ziplineTrolley);
+    interactiveMeshes.push(trolleyMesh);
   }
 
-  // 2. Suspension Bridge (Puente Tibetano)
   function buildSuspensionBridge() {
     const bridgeGroup = new THREE.Group();
+    bridgeGroup.userData = { id: 'puente' };
     const woodMat = new THREE.MeshStandardMaterial({ color: 0xb45309, flatShading: true });
-    const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
 
-    // Planks spanning across the river gorge
-    const p1 = new THREE.Vector3(0.5, 0.85, -1.8);
-    const p2 = new THREE.Vector3(2.0, 0.7, -0.6);
+    const p1 = new THREE.Vector3(0.5, 0.9, -1.8);
+    const p2 = new THREE.Vector3(2.1, 0.75, -0.6);
     const numPlanks = 10;
 
     for (let i = 0; i <= numPlanks; i++) {
       const t = i / numPlanks;
       const x = THREE.MathUtils.lerp(p1.x, p2.x, t);
       const z = THREE.MathUtils.lerp(p1.z, p2.z, t);
-      // Gentle sag in middle
-      const sag = Math.sin(t * Math.PI) * 0.15;
+      const sag = Math.sin(t * Math.PI) * 0.16;
       const y = THREE.MathUtils.lerp(p1.y, p2.y, t) - sag;
 
-      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.04, 0.12), woodMat);
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.04, 0.13), woodMat);
       plank.position.set(x, y, z);
       plank.rotation.y = -0.65;
       plank.castShadow = true;
       bridgeGroup.add(plank);
+      interactiveMeshes.push(plank);
     }
 
     worldGroup.add(bridgeGroup);
   }
 
-  // 3. Stylized Low-Poly Deer (Inspired by the reference illustration)
   function buildStylizedDeer() {
-    const deerGroup = new THREE.Group();
-    deerGroup.position.set(2.4, 0.38, 1.8);
+    deerGroup = new THREE.Group();
+    deerGroup.userData = { id: 'ciervo' };
+    deerGroup.position.set(2.4, 0.42, 1.8);
     deerGroup.rotation.y = -1.2;
 
-    // Body with warm blush coral tone like the reference image
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0xfda4af, // Soft pink-coral
+      color: 0xfda4af, // Soft coral-pink inspired by reference image
       flatShading: true,
       roughness: 0.6
     });
 
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.35, 0.7), bodyMat);
-    body.position.y = 0.55;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.38, 0.74), bodyMat);
+    body.position.y = 0.58;
     body.castShadow = true;
     deerGroup.add(body);
+    interactiveMeshes.push(body);
 
-    // 4 Slender legs
     const legMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, flatShading: true });
-    const legGeo = new THREE.BoxGeometry(0.07, 0.5, 0.07);
-    const legOffsets = [
-      { x: -0.16, z: 0.25 },
-      { x: 0.16, z: 0.25 },
-      { x: -0.16, z: -0.25 },
-      { x: 0.16, z: -0.25 }
-    ];
-    legOffsets.forEach(pos => {
+    const legGeo = new THREE.BoxGeometry(0.075, 0.52, 0.075);
+    [
+      { x: -0.17, z: 0.26 },
+      { x: 0.17, z: 0.26 },
+      { x: -0.17, z: -0.26 },
+      { x: 0.17, z: -0.26 }
+    ].forEach(pos => {
       const leg = new THREE.Mesh(legGeo, legMat);
-      leg.position.set(pos.x, 0.25, pos.z);
+      leg.position.set(pos.x, 0.26, pos.z);
       leg.castShadow = true;
       deerGroup.add(leg);
     });
 
-    // Neck & Head
     deerHead = new THREE.Group();
-    deerHead.position.set(0, 0.72, 0.32);
+    deerHead.position.set(0, 0.75, 0.34);
 
-    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.32, 0.2), bodyMat);
+    const neck = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.34, 0.22), bodyMat);
     neck.position.set(0, 0.1, 0.05);
     neck.rotation.x = -0.3;
     neck.castShadow = true;
     deerHead.add(neck);
 
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.3), bodyMat);
-    head.position.set(0, 0.25, 0.18);
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.32), bodyMat);
+    head.position.set(0, 0.26, 0.19);
     head.castShadow = true;
     deerHead.add(head);
 
-    // Golden Antlers / Horns
     const hornMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, flatShading: true });
-    const hornGeo = new THREE.ConeGeometry(0.04, 0.24, 5);
+    const hornGeo = new THREE.ConeGeometry(0.045, 0.26, 5);
     const hornL = new THREE.Mesh(hornGeo, hornMat);
-    hornL.position.set(-0.08, 0.42, 0.12);
-    hornL.rotation.z = -0.2;
+    hornL.position.set(-0.09, 0.44, 0.13);
+    hornL.rotation.z = -0.22;
     deerHead.add(hornL);
 
     const hornR = new THREE.Mesh(hornGeo, hornMat);
-    hornR.position.set(0.08, 0.42, 0.12);
-    hornR.rotation.z = 0.2;
+    hornR.position.set(0.09, 0.44, 0.13);
+    hornR.rotation.z = 0.22;
     deerHead.add(hornR);
 
     deerGroup.add(deerHead);
     worldGroup.add(deerGroup);
   }
 
-  // 4. Basecamp: Tipi Tent & Campfire
   function buildCampfireAndTent() {
     const campGroup = new THREE.Group();
-    campGroup.position.set(-0.6, 0.35, 2.4);
+    campGroup.userData = { id: 'campamento' };
+    campGroup.position.set(-0.6, 0.4, 2.4);
 
-    // Tipi / Camping Tent
-    const tentMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, flatShading: true });
-    const tent = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.9, 4), tentMat);
-    tent.position.set(-0.5, 0.45, -0.3);
+    const tentMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, flatShading: true });
+    const tent = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.95, 4), tentMat);
+    tent.position.set(-0.55, 0.48, -0.32);
     tent.rotation.y = 0.6;
     tent.castShadow = true;
     campGroup.add(tent);
+    interactiveMeshes.push(tent);
 
-    // Campfire ring of stones
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0x475569, flatShading: true });
     for (let i = 0; i < 7; i++) {
       const angle = (i / 7) * Math.PI * 2;
       const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.08, 0), stoneMat);
-      stone.position.set(Math.cos(angle) * 0.24, 0.04, Math.sin(angle) * 0.24);
+      stone.position.set(Math.cos(angle) * 0.26, 0.04, Math.sin(angle) * 0.26);
       campGroup.add(stone);
     }
 
-    // Fire logs
     const logMat = new THREE.MeshStandardMaterial({ color: 0x78350f, flatShading: true });
-    const log1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.35), logMat);
+    const log1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.38), logMat);
     log1.rotation.y = 0.7;
     campGroup.add(log1);
-    const log2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.35), logMat);
+    const log2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.38), logMat);
     log2.rotation.y = -0.7;
     campGroup.add(log2);
 
-    // Low-poly glowing fire flame
     const fireMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
-    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.28, 5), fireMat);
-    fire.position.y = 0.15;
+    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 5), fireMat);
+    fire.position.y = 0.16;
     campGroup.add(fire);
 
     worldGroup.add(campGroup);
   }
 
-  // 5. Floating Nature Spores / Fireflies
   function buildFloatingFireflies() {
-    const particleCount = 140;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const scales = new Float32Array(particleCount);
+    const count = 150;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
 
-    for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 11;
-      positions[i * 3 + 1] = Math.random() * 4.5 + 0.2;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 11;
-      scales[i] = Math.random() * 0.8 + 0.3;
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 12;
+      pos[i * 3 + 1] = Math.random() * 5.0 + 0.3;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 12;
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
 
-    // Particle Material with glowing point appearance
-    const material = new THREE.PointsMaterial({
-      color: 0x6ee7b7, // Mint green glow
-      size: 0.12,
+    const mat = new THREE.PointsMaterial({
+      color: 0x6ee7b7,
+      size: 0.14,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending
     });
 
-    fireflyParticles = new THREE.Points(geometry, material);
+    fireflyParticles = new THREE.Points(geo, mat);
     worldGroup.add(fireflyParticles);
   }
 
-  // --- INTERACTION CONTROLS ---
+  // --- PARALLAX & CONTROLS ---
   function setupControls() {
-    // Mouse / Touch Drag to Rotate
+    // Canvas Drag Controls
     container.addEventListener('mousedown', (e) => {
       isDragging = true;
       autoRotate = false;
@@ -645,30 +629,35 @@
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!isDragging) {
-        // Subtle mouse parallax tilt when just hovering
-        const rect = container.getBoundingClientRect();
-        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-          const normX = (e.clientX - rect.left) / rect.width - 0.5;
-          const normY = (e.clientY - rect.top) / rect.height - 0.5;
-          targetRotation.x = 0.35 + normY * 0.25;
-          targetRotation.y += normX * 0.005;
-        }
-        return;
+      // 1. Calculate normalized mouse coordinates for Parallax across entire screen
+      const normX = (e.clientX / window.innerWidth) * 2 - 1;
+      const normY = -(e.clientY / window.innerHeight) * 2 + 1;
+      
+      mouseParallax.x = normX * 0.45;
+      mouseParallax.y = normY * 0.25;
+
+      // DOM Parallax on elements with data-parallax
+      document.querySelectorAll('[data-parallax]').forEach(el => {
+        const factor = parseFloat(el.getAttribute('data-parallax')) || 10;
+        const tx = normX * factor;
+        const ty = normY * factor;
+        el.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
+      });
+
+      // 2. Dragging on canvas
+      if (isDragging) {
+        const deltaX = e.clientX - prevMousePos.x;
+        const deltaY = e.clientY - prevMousePos.y;
+
+        targetRotation.y += deltaX * 0.007;
+        targetRotation.x += deltaY * 0.005;
+        targetRotation.x = Math.max(0.12, Math.min(0.95, targetRotation.x));
+
+        prevMousePos = { x: e.clientX, y: e.clientY };
       }
-
-      const deltaX = e.clientX - prevMousePos.x;
-      const deltaY = e.clientY - prevMousePos.y;
-
-      targetRotation.y += deltaX * 0.008;
-      targetRotation.x += deltaY * 0.006;
-      // Clamp vertical tilt
-      targetRotation.x = Math.max(0.1, Math.min(1.1, targetRotation.x));
-
-      prevMousePos = { x: e.clientX, y: e.clientY };
     });
 
-    // Touch events for mobile
+    // Touch support
     container.addEventListener('touchstart', (e) => {
       if (e.touches.length === 1) {
         isDragging = true;
@@ -686,61 +675,70 @@
       const deltaX = e.touches[0].clientX - prevMousePos.x;
       const deltaY = e.touches[0].clientY - prevMousePos.y;
 
-      targetRotation.y += deltaX * 0.008;
-      targetRotation.x += deltaY * 0.006;
-      targetRotation.x = Math.max(0.1, Math.min(1.1, targetRotation.x));
+      targetRotation.y += deltaX * 0.007;
+      targetRotation.x += deltaY * 0.005;
+      targetRotation.x = Math.max(0.12, Math.min(0.95, targetRotation.x));
 
       prevMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     }, { passive: true });
 
-    // Mouse wheel zoom
+    // Wheel Zoom
     container.addEventListener('wheel', (e) => {
       e.preventDefault();
-      targetCameraDistance += e.deltaY * 0.01;
+      targetCameraDistance += e.deltaY * 0.008;
       targetCameraDistance = Math.max(7, Math.min(22, targetCameraDistance));
     }, { passive: false });
   }
 
+  // Scroll Parallax Handler
+  function onScrollParallax() {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const heroHeight = window.innerHeight;
+    const scrollRatio = Math.min(1.5, scrollY / heroHeight);
+
+    // Camera elevates subtly with scroll, panning closer into forest
+    scrollOffset = scrollRatio * 3.5;
+  }
+
   function setupHotspotTriggers() {
-    // Buttons in UI to focus on attractions
-    const buttons = document.querySelectorAll('[data-hotspot]');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const hotspotId = btn.getAttribute('data-hotspot');
-        focusHotspot(hotspotId);
+    document.querySelectorAll('[data-hotspot]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const id = btn.getAttribute('data-hotspot');
+        focusHotspot(id);
       });
     });
 
-    // Day/Night switcher buttons
-    const themeBtns = document.querySelectorAll('[data-3d-theme]');
-    themeBtns.forEach(btn => {
+    document.querySelectorAll('[data-3d-theme]').forEach(btn => {
       btn.addEventListener('click', () => {
         const theme = btn.getAttribute('data-3d-theme');
         setTheme(theme);
-        themeBtns.forEach(b => b.classList.remove('bg-emerald-600', 'text-white'));
-        btn.classList.add('bg-emerald-600', 'text-white');
+        document.querySelectorAll('[data-3d-theme]').forEach(b => {
+          b.classList.remove('bg-emerald-600', 'text-white', 'shadow-md');
+          b.classList.add('bg-forest-900/80', 'text-emerald-200');
+        });
+        btn.classList.remove('bg-forest-900/80', 'text-emerald-200');
+        btn.classList.add('bg-emerald-600', 'text-white', 'shadow-md');
       });
     });
 
-    // Reset view button
     const resetBtn = document.getElementById('btn-reset-3d');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        cameraTarget.set(0, 0.5, 0);
-        targetCameraDistance = 14;
-        targetRotation.x = 0.35;
-        targetRotation.y = -0.6;
+        cameraTarget.set(0.5, 0.6, 0);
+        targetCameraDistance = 13.5;
+        targetRotation.x = baseRotation.x;
+        targetRotation.y = baseRotation.y;
         autoRotate = true;
         hideHotspotModal();
       });
     }
 
-    // Auto-rotate toggle
-    const autoRotateBtn = document.getElementById('btn-toggle-rotate');
-    if (autoRotateBtn) {
-      autoRotateBtn.addEventListener('click', () => {
+    const rotateBtn = document.getElementById('btn-toggle-rotate');
+    if (rotateBtn) {
+      rotateBtn.addEventListener('click', () => {
         autoRotate = !autoRotate;
-        autoRotateBtn.classList.toggle('text-emerald-400');
+        rotateBtn.classList.toggle('text-mint');
       });
     }
   }
@@ -750,10 +748,11 @@
     if (!spot) return;
 
     autoRotate = false;
-    cameraTarget.copy(spot.cameraTarget);
-    targetCameraDistance = spot.camDistance;
+    cameraTarget.copy(spot.target);
+    targetCameraDistance = spot.camDist;
+    targetRotation.x = spot.rotX;
+    targetRotation.y = spot.rotY;
 
-    // Display rich popup modal/card
     showHotspotInfo(spot);
   }
 
@@ -765,11 +764,10 @@
     document.getElementById('hotspot-desc').textContent = spot.desc;
     document.getElementById('hotspot-difficulty').textContent = spot.difficulty;
     document.getElementById('hotspot-height').textContent = spot.height;
-    
-    // Set booking selector
-    const bookLink = document.getElementById('hotspot-book-btn');
-    if (bookLink) {
-      bookLink.onclick = () => {
+
+    const bookBtn = document.getElementById('hotspot-book-btn');
+    if (bookBtn) {
+      bookBtn.onclick = () => {
         const select = document.getElementById('booking-experience');
         if (select) {
           select.value = spot.id;
@@ -794,27 +792,30 @@
     currentTheme = theme;
     if (theme === 'day') {
       hemiLight.color.setHex(0xdcfce7);
-      hemiLight.groundColor.setHex(0x064e3b);
-      hemiLight.intensity = 0.9;
+      hemiLight.groundColor.setHex(0x04170f);
+      hemiLight.intensity = 1.0;
       sunLight.color.setHex(0xfffbeb);
-      sunLight.intensity = 1.4;
+      sunLight.intensity = 1.6;
       campLight.intensity = 1.2;
+      scene.fog.color.setHex(0x04170f);
       if (fireflyParticles) fireflyParticles.material.color.setHex(0x6ee7b7);
     } else if (theme === 'sunset') {
-      hemiLight.color.setHex(0xfecdd3); // warm rose
-      hemiLight.groundColor.setHex(0x312e81);
-      hemiLight.intensity = 0.7;
-      sunLight.color.setHex(0xf97316); // fiery orange
-      sunLight.intensity = 1.6;
-      campLight.intensity = 2.0;
+      hemiLight.color.setHex(0xfecdd3);
+      hemiLight.groundColor.setHex(0x1e1b4b);
+      hemiLight.intensity = 0.85;
+      sunLight.color.setHex(0xf97316);
+      sunLight.intensity = 1.8;
+      campLight.intensity = 2.2;
+      scene.fog.color.setHex(0x1f1422);
       if (fireflyParticles) fireflyParticles.material.color.setHex(0xfde047);
     } else if (theme === 'night') {
       hemiLight.color.setHex(0x1e3a8a);
       hemiLight.groundColor.setHex(0x020617);
-      hemiLight.intensity = 0.35;
-      sunLight.color.setHex(0x93c5fd); // moonlight
-      sunLight.intensity = 0.45;
-      campLight.intensity = 3.2; // bright campfire glow
+      hemiLight.intensity = 0.4;
+      sunLight.color.setHex(0x93c5fd);
+      sunLight.intensity = 0.5;
+      campLight.intensity = 3.4;
+      scene.fog.color.setHex(0x020a07);
       if (fireflyParticles) fireflyParticles.material.color.setHex(0x34d399);
     }
   }
@@ -826,8 +827,8 @@
     renderer.setSize(container.clientWidth, container.clientHeight);
   }
 
-  // --- ANIMATION LOOP ---
-  let clock = new THREE.Clock();
+  // --- LOOP ---
+  const clock = new THREE.Clock();
 
   function animate() {
     requestAnimationFrame(animate);
@@ -835,68 +836,62 @@
     const delta = clock.getDelta();
     const elapsedTime = clock.getElapsedTime();
 
-    // Auto rotation
     if (autoRotate) {
-      targetRotation.y += delta * 0.12;
+      targetRotation.y += delta * 0.11;
     }
 
-    // Smooth rotation interpolation (LERP)
-    currentRotation.x += (targetRotation.x - currentRotation.x) * 0.08;
-    currentRotation.y += (targetRotation.y - currentRotation.y) * 0.08;
+    // Smooth rotation lerp with mouse parallax integration
+    currentRotation.x += (targetRotation.x + mouseParallax.y * 0.2 - currentRotation.x) * 0.06;
+    currentRotation.y += (targetRotation.y + mouseParallax.x * 0.3 - currentRotation.y) * 0.06;
     cameraDistance += (targetCameraDistance - cameraDistance) * 0.08;
 
-    // Smooth camera lookAt interpolation
-    currentLookAt.lerp(cameraTarget, 0.08);
+    currentLookAt.lerp(cameraTarget, 0.06);
 
-    // Orbit camera placement around lookAt point
     const cosY = Math.cos(currentRotation.y);
     const sinY = Math.sin(currentRotation.y);
     const cosX = Math.cos(currentRotation.x);
     const sinX = Math.sin(currentRotation.x);
 
+    // Orbit position + scroll parallax lift
     camera.position.x = currentLookAt.x + cameraDistance * sinY * cosX;
-    camera.position.y = currentLookAt.y + cameraDistance * sinX;
+    camera.position.y = currentLookAt.y + cameraDistance * sinX + scrollOffset * 0.8;
     camera.position.z = currentLookAt.z + cameraDistance * cosY * cosX;
     camera.lookAt(currentLookAt);
 
-    // 1. Animate Zipline Trolley
+    // Zipline animation
     if (ziplineTrolley) {
-      ziplineProgress += delta * 0.28;
+      ziplineProgress += delta * 0.26;
       if (ziplineProgress > 1) ziplineProgress = 0;
-
       const pStart = new THREE.Vector3(ziplineStart.x, ziplineStart.y + 0.1, ziplineStart.z);
-      const pEnd = new THREE.Vector3(ziplineEnd.x, 0.35 + 0.95, ziplineEnd.z);
+      const pEnd = new THREE.Vector3(ziplineEnd.x, 0.4 + 1.0, ziplineEnd.z);
       ziplineTrolley.position.lerpVectors(pStart, pEnd, ziplineProgress);
-
-      // Subtle swinging motion
       ziplineTrolley.rotation.z = Math.sin(elapsedTime * 6) * 0.12;
     }
 
-    // 2. Animate Stylized Deer Head (peacefully grazing)
+    // Deer head animation
     if (deerHead) {
-      deerHead.rotation.x = Math.sin(elapsedTime * 1.5) * 0.15 - 0.1;
-      deerHead.rotation.y = Math.cos(elapsedTime * 0.8) * 0.12;
+      deerHead.rotation.x = Math.sin(elapsedTime * 1.6) * 0.14 - 0.08;
+      deerHead.rotation.y = Math.cos(elapsedTime * 0.9) * 0.12;
     }
 
-    // 3. Animate Floating Fireflies
+    // Floating fireflies animation
     if (fireflyParticles) {
       const positions = fireflyParticles.geometry.attributes.position.array;
       for (let i = 0; i < positions.length; i += 3) {
         positions[i + 1] += Math.sin(elapsedTime * 1.5 + positions[i]) * 0.003;
       }
       fireflyParticles.geometry.attributes.position.needsUpdate = true;
-      fireflyParticles.rotation.y = elapsedTime * 0.03;
+      fireflyParticles.rotation.y = elapsedTime * 0.025;
     }
 
-    // 4. Campfire flicker light
+    // Campfire flicker
     if (campLight) {
-      campLight.intensity += (Math.random() - 0.5) * 0.15;
+      campLight.intensity += (Math.random() - 0.5) * 0.16;
     }
 
     renderer.render(scene, camera);
   }
 
-  // Public API
   window.AdventureScene = {
     init,
     focusHotspot,
@@ -904,7 +899,6 @@
     hideHotspotModal
   };
 
-  // Run on load
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
