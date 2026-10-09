@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Silva | Parque de Aventuras & Conservación Natural</title>
+  <meta name="description" content="Parque de aventuras en la naturaleza: tirolinas gigantes, puentes suspendidos, vías ferratas y conservación de fauna silvestre. Vive una experiencia inolvidable.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: {
+              950: '#04170F',
+              900: '#061c14',
+              800: '#0c3324',
+              700: '#14533c',
+              600: '#1a6e4f',
+              500: '#22c55e',
+              100: '#dcfce7',
+              50: '#f0fdf4',
+            },
+            coral: {
+              DEFAULT: '#fb7185',
+              soft: '#fda4af',
+              light: '#ffe4e6',
+            },
+            mint: '#6ee7b7',
+            cream: '#f8faf6',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Three.js & Lucide CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-forest-900 text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+      <nav class="glass-nav rounded-2xl px-5 py-3.5 flex items-center justify-between text-white shadow-xl shadow-forest-950/20">
+        
+        <!-- Brand / Logo -->
+        <a href="#" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-mint flex items-center justify-center text-forest-950 shadow-md group-hover:scale-105 transition-transform">
+            <i data-lucide="trees" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div>
+            <span class="font-display font-bold text-xl tracking-tight text-white flex items-center gap-1.5">
+              SILVA <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-mint font-semibold uppercase tracking-wider">Aventura</span>
+            </span>
+            <span class="block text-[11px] text-emerald-200/60 font-medium -mt-1 tracking-wide">Parque Natural & Circuitos</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-emerald-100/80">
+          <a href="#experiencia-3d" class="hover:text-mint transition-colors flex items-center gap-1.5">
+            <i data-lucide="box" class="w-4 h-4 text-emerald-400"></i> El Parque 3D
+          </a>
+          <a href="#actividades" class="hover:text-mint transition-colors flex items-center gap-1.5">
+            <i data-lucide="compass" class="w-4 h-4 text-emerald-400"></i> Actividades
+          </a>
+          <a href="#tarifas" class="hover:text-mint transition-colors flex items-center gap-1.5">
+            <i data-lucide="ticket" class="w-4 h-4 text-emerald-400"></i> Tarifas
+          </a>
+          <a href="#seguridad" class="hover:text-mint transition-colors flex items-center gap-1.5">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Seguridad
+          </a>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="hidden sm:flex items-center gap-3">
+          <a href="tel:+34900123456" class="text-xs font-semibold text-emerald-200/90 hover:text-white px-3 py-2 flex items-center gap-1.5">
+            <i data-lucide="phone-call" class="w-3.5 h-3.5 text-mint"></i> 900 123 456
+          </a>
+          <a href="#reserva-section" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-forest-950 font-display font-bold text-sm tracking-wide shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
+            <i data-lucide="calendar" class="w-4 h-4"></i> Reservar Ahora
+          </a>
+        </div>
+
+        <!-- Mobile Menu Hamburger -->
+        <button id="btn-mobile-menu" aria-label="Abrir menú" class="md:hidden p-2 rounded-lg text-emerald-200 hover:text-white hover:bg-forest-800 transition">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </nav>
+
+      <!-- Mobile Dropdown Menu -->
+      <div id="mobile-menu" class="hidden md:hidden mt-2 p-5 glass-nav rounded-2xl text-white flex flex-col gap-4 text-base font-medium shadow-2xl">
+        <a href="#experiencia-3d" class="flex items-center gap-2 py-1 text-emerald-100 hover:text-mint">
+          <i data-lucide="box" class="w-4 h-4 text-emerald-400"></i> El Parque 3D
+        </a>
+        <a href="#actividades" class="flex items-center gap-2 py-1 text-emerald-100 hover:text-mint">
+          <i data-lucide="compass" class="w-4 h-4 text-emerald-400"></i> Actividades
+        </a>
+        <a href="#tarifas" class="flex items-center gap-2 py-1 text-emerald-100 hover:text-mint">
+          <i data-lucide="ticket" class="w-4 h-4 text-emerald-400"></i> Tarifas
+        </a>
+        <a href="#seguridad" class="flex items-center gap-2 py-1 text-emerald-100 hover:text-mint">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i> Seguridad
+        </a>
+        <a href="#reserva-section" class="w-full text-center py-3 rounded-xl bg-emerald-500 text-forest-950 font-bold font-display shadow-lg">
+          Reservar Experiencia
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO SECTION (Directamente inspirada en la ilustración de referencia) ================= -->
+  <main class="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    
+    <!-- Big Floating Hero Card (Estilo ventana curva premium con fondo verde profundo) -->
+    <div class="relative bg-hero-card rounded-[2.5rem] lg:rounded-[3.2rem] shadow-2xl shadow-forest-950/60 overflow-hidden border border-emerald-900/10">
+      
+      <!-- Top Organic Decorative Gradient Ribbon -->
+      <div class="absolute -top-32 -right-32 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute top-1/2 -left-20 w-80 h-80 bg-rose-300/15 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[640px] items-stretch">
+        
+        <!-- Hero Left Column: Editorial Nature Text -->
+        <div class="lg:col-span-5 p-8 sm:p-12 lg:p-16 flex flex-col justify-between z-10">
+          <div>
+            <!-- Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/90 text-emerald-800 text-xs font-semibold tracking-wide mb-6 shadow-sm border border-emerald-200/60">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              RESERVA NATURAL & PARQUE DE AVENTURA
+            </div>
+
+            <!-- Main Heading (Minimalista, impactante y claro) -->
+            <h1 class="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-slate-900 leading-[1.15] tracking-tight">
+              Aventura & <br class="hidden sm:inline">
+              <span class="text-emerald-800">Vida Silvestre</span>
+            </h1>
+
+            <!-- Coral Accent Line (Inspirado directamente en la franja coral de la ilustración) -->
+            <div class="w-16 h-1.5 bg-coral rounded-full mt-4 mb-6 shadow-sm shadow-coral/30"></div>
+
+            <!-- Lead Paragraph -->
+            <p class="text-slate-600 text-base sm:text-lg leading-relaxed font-normal mb-8 max-w-md">
+              Desafía las alturas entre tirolinas gigantes, puentes tibetanos y copas de árboles milenarios, conviviendo en armonía con ciervos protegidos y fauna autóctona.
+            </p>
+
+            <!-- CTA Action Buttons -->
+            <div class="flex flex-wrap items-center gap-4">
+              <a href="#reserva-section" class="px-7 py-3.5 rounded-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-display font-bold text-sm tracking-wide shadow-lg shadow-emerald-700/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group">
+                <span>RESERVAR AVENTURA</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+              </a>
+
+              <a href="#experiencia-3d" class="px-6 py-3.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-display font-semibold text-sm transition-all flex items-center gap-2 border border-slate-200/80">
+                <i data-lucide="eye" class="w-4 h-4 text-emerald-600"></i>
+                <span>Explorar en 3D</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Bottom Micro-Stats -->
+          <div class="pt-10 mt-8 border-t border-slate-200/70 grid grid-cols-3 gap-4 text-left">
+            <div>
+              <span class="block font-display font-extrabold text-2xl text-emerald-800">600m</span>
+              <span class="text-xs text-slate-500 font-medium">Tirolina Doble</span>
+            </div>
+            <div>
+              <span class="block font-display font-extrabold text-2xl text-emerald-800">45+</span>
+              <span class="text-xs text-slate-500 font-medium">Retos en Árboles</span>
+            </div>
+            <div>
+              <span class="block font-display font-extrabold text-2xl text-emerald-800">100%</span>
+              <span class="text-xs text-slate-500 font-medium">Sostenible</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Hero Right Column: Interactive 3D Three.js Island & Park Viewer -->
+        <div class="lg:col-span-7 relative bg-gradient-to-b from-emerald-950 via-forest-900 to-forest-950 p-4 sm:p-6 flex flex-col justify-between overflow-hidden min-h-[460px] lg:min-h-auto">
+          
+          <!-- Subtle 3D Controls Top Bar -->
+          <div class="relative z-20 flex flex-wrap items-center justify-between gap-3 bg-forest-900/60 backdrop-blur-md p-2.5 rounded-2xl border border-emerald-500/20 text-white">
+            
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-semibold text-emerald-200/80 pl-2 pr-1 hidden sm:inline">Ambiente:</span>
+              <button data-3d-theme="day" class="px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition hover:scale-105 flex items-center gap-1">
+                <i data-lucide="sun" class="w-3.5 h-3.5"></i> Día
+              </button>
+              <button data-3d-theme="sunset" class="px-3 py-1 rounded-lg text-xs font-semibold bg-forest-800/80 text-emerald-200 hover:text-white transition hover:scale-105 flex items-center gap-1">
+                <i data-lucide="sunset" class="w-3.5 h-3.5 text-amber-400"></i> Atardecer
+              </button>
+              <button data-3d-theme="night" class="px-3 py-1 rounded-lg text-xs font-semibold bg-forest-800/80 text-emerald-200 hover:text-white transition hover:scale-105 flex items-center gap-1">
+                <i data-lucide="moon" class="w-3.5 h-3.5 text-blue-300"></i> Noche
+              </button>
+            </div>
+
+            <div class="flex items-center gap-1.5 ml-auto">
+              <button id="btn-toggle-rotate" title="Girar automáticamente" class="p-1.5 rounded-lg bg-forest-800/80 hover:bg-forest-700 text-emerald-300 transition text-xs flex items-center gap-1">
+                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+              </button>
+              <button id="btn-reset-3d" title="Restablecer cámara" class="p-1.5 rounded-lg bg-forest-800/80 hover:bg-forest-700 text-emerald-300 transition text-xs flex items-center gap-1">
+                <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- THREE.JS INTERACTIVE CANVAS CONTAINER -->
+          <div id="three-canvas-container" class="w-full h-full min-h-[380px] lg:min-h-[480px] relative z-10 flex-1 my-2 rounded-2xl overflow-hidden">
+            <!-- Hint overlay -->
+            <div class="absolute bottom-4 left-4 pointer-events-none z-20">
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-forest-950/70 backdrop-blur-md text-emerald-200 text-xs font-medium border border-emerald-500/20">
+                <i data-lucide="move-3d" class="w-3.5 h-3.5 text-mint"></i> Arrastra para rotar 360° • Zoom con rueda
+              </span>
+            </div>
+          </div>
+
+          <!-- Interactive Hotspots Quick Buttons Bottom Bar -->
+          <div class="relative z-20 pt-2">
+            <div class="text-[11px] uppercase tracking-wider text-emerald-300/70 font-bold mb-2 flex items-center gap-1.5">
+              <i data-lucide="map-pin" class="w-3 h-3 text-mint"></i> Puntos de Interés Interactivos 3D:
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <button data-hotspot="tirolina" class="p-2 rounded-xl bg-forest-800/80 hover:bg-emerald-700/80 border border-emerald-500/20 text-white text-xs font-medium text-left transition flex items-center gap-2 group">
+                <span class="w-2 h-2 rounded-full bg-rose-400 group-hover:scale-125 transition-transform"></span>
+                <span class="truncate">Tirolina 600m</span>
+              </button>
+
+              <button data-hotspot="puente" class="p-2 rounded-xl bg-forest-800/80 hover:bg-emerald-700/80 border border-emerald-500/20 text-white text-xs font-medium text-left transition flex items-center gap-2 group">
+                <span class="w-2 h-2 rounded-full bg-amber-400 group-hover:scale-125 transition-transform"></span>
+                <span class="truncate">Puente Tibetano</span>
+              </button>
+
+              <button data-hotspot="ciervo" class="p-2 rounded-xl bg-forest-800/80 hover:bg-emerald-700/80 border border-emerald-500/20 text-white text-xs font-medium text-left transition flex items-center gap-2 group">
+                <span class="w-2 h-2 rounded-full bg-coral group-hover:scale-125 transition-transform"></span>
+                <span class="truncate">Fauna Silvestre</span>
+              </button>
+
+              <button data-hotspot="campamento" class="p-2 rounded-xl bg-forest-800/80 hover:bg-emerald-700/80 border border-emerald-500/20 text-white text-xs font-medium text-left transition flex items-center gap-2 group">
+                <span class="w-2 h-2 rounded-full bg-mint group-hover:scale-125 transition-transform"></span>
+                <span class="truncate">Campamento Base</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Hotspot Info Card (Slides in when clicking a point) -->
+          <div id="hotspot-details-card" class="hidden opacity-0 translate-y-4 absolute top-20 right-6 left-6 sm:left-auto sm:w-80 z-30 p-5 rounded-2xl glass-dark shadow-2xl transition-all duration-300">
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <h3 id="hotspot-title" class="font-display font-bold text-base text-white">Detalle de Actividad</h3>
+              <button id="btn-close-hotspot" class="p-1 rounded-lg text-emerald-300 hover:text-white hover:bg-emerald-800/50 transition">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <p id="hotspot-desc" class="text-xs text-emerald-100/90 leading-relaxed mb-4">Información sobre la atracción seleccionada.</p>
+            
+            <div class="grid grid-cols-2 gap-2 text-[11px] py-2 border-y border-emerald-500/20 mb-4 text-emerald-200">
+              <div><strong class="text-white block font-medium">Dificultad:</strong> <span id="hotspot-difficulty">-</span></div>
+              <div><strong class="text-white block font-medium">Altura:</strong> <span id="hotspot-height">-</span></div>
+            </div>
+
+            <button id="hotspot-book-btn" class="w-full py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-mint text-forest-950 font-display font-bold text-xs tracking-wide shadow-md transition hover:scale-102 flex items-center justify-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Elegir para mi Reserva
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= SECCIÓN DE ACTIVIDADES Y CIRCUITOS ================= -->
+  <section id="actividades" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    
+    <div class="text-center max-w-2xl mx-auto mb-12">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-800 text-mint text-xs font-semibold mb-3 border border-emerald-500/20">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> EXPERIENCIAS ÚNICAS
+      </div>
+      <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight">
+        Circuitos Diseñados para Cada Explorador
+      </h2>
+      <p class="text-emerald-200/70 text-base mt-3">
+        Desde paseos botánicos en calma hasta tirolinas a toda velocidad. Todos los recorridos cuentan con arnés continuo anticaída 100% seguro.
+      </p>
+
+      <!-- Category Filter Tabs -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mt-8">
+        <button data-filter="all" class="px-5 py-2 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-md">
+          Todos los Circuitos
+        </button>
+        <button data-filter="adrenalina" class="px-5 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:text-emerald-800">
+          ⚡ Adrenalina Pura
+        </button>
+        <button data-filter="familiar" class="px-5 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:text-emerald-800">
+          👨‍👩‍👧‍👦 Familiar & Niños
+        </button>
+        <button data-filter="eco" class="px-5 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:text-emerald-800">
+          🦌 Eco-Safari Fauna
+        </button>
+      </div>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      <!-- Card 1: Tirolina Superman -->
+      <div data-category="adrenalina" class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col justify-between hover:-translate-y-1.5 transition-transform duration-300">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-5">
+            <i data-lucide="zap" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">Adrenalina</span>
+            <span class="text-xs font-semibold text-slate-400">Desde 12 años</span>
+          </div>
+          <h3 class="font-display font-bold text-xl text-slate-900 mb-2">Tirolina Superman</h3>
+          <p class="text-slate-600 text-sm leading-relaxed mb-6">
+            600 metros de vuelo rasante sobre las copas de los árboles en posición horizontal a más de 80 km/h.
+          </p>
+        </div>
+
+        <div>
+          <div class="space-y-1.5 py-3 border-t border-slate-100 text-xs text-slate-500 mb-4">
+            <div class="flex justify-between"><span>Altura:</span> <strong class="text-slate-800">35 metros</strong></div>
+            <div class="flex justify-between"><span>Duración:</span> <strong class="text-slate-800">45 minutos</strong></div>
+            <div class="flex justify-between"><span>Precio base:</span> <strong class="text-emerald-700 font-bold">28€ / pers</strong></div>
+          </div>
+          <button data-select-plan="tirolina" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-display font-bold text-xs tracking-wider transition flex items-center justify-center gap-1.5">
+            <span>SELECCIONAR</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 2: Puente Tibetano -->
+      <div data-category="familiar" class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col justify-between hover:-translate-y-1.5 transition-transform duration-300">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-5">
+            <i data-lucide="cable-car" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">Familiar</span>
+            <span class="text-xs font-semibold text-slate-400">Desde 6 años</span>
+          </div>
+          <h3 class="font-display font-bold text-xl text-slate-900 mb-2">Puente Tibetano</h3>
+          <p class="text-slate-600 text-sm leading-relaxed mb-6">
+            Paso colgante de tablas sobre el cañón con vistas panorámicas 360° del valle y línea continua.
+          </p>
+        </div>
+
+        <div>
+          <div class="space-y-1.5 py-3 border-t border-slate-100 text-xs text-slate-500 mb-4">
+            <div class="flex justify-between"><span>Altura:</span> <strong class="text-slate-800">18 metros</strong></div>
+            <div class="flex justify-between"><span>Duración:</span> <strong class="text-slate-800">60 minutos</strong></div>
+            <div class="flex justify-between"><span>Precio base:</span> <strong class="text-emerald-700 font-bold">24€ / pers</strong></div>
+          </div>
+          <button data-select-plan="puente" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-display font-bold text-xs tracking-wider transition flex items-center justify-center gap-1.5">
+            <span>SELECCIONAR</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 3: Santuario de Ciervos -->
+      <div data-category="eco" class="bg-white rounded-3xl p-6 shadow-xl border border-slate-100 flex flex-col justify-between hover:-translate-y-1.5 transition-transform duration-300">
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-5">
+            <i data-lucide="paw-print" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Eco-Safari</span>
+            <span class="text-xs font-semibold text-slate-400">Todas las edades</span>
+          </div>
+          <h3 class="font-display font-bold text-xl text-slate-900 mb-2">Santuario de Ciervos</h3>
+          <p class="text-slate-600 text-sm leading-relaxed mb-6">
+            Recorrido guiado de observación de fauna salvaje, aves rapaces y ciervos en libertad controlada.
+          </p>
+        </div>
+
+        <div>
+          <div class="space-y-1.5 py-3 border-t border-slate-100 text-xs text-slate-500 mb-4">
+            <div class="flex justify-between"><span>Terreno:</span> <strong class="text-slate-800">Sendero llano</strong></div>
+            <div class="flex justify-between"><span>Duración:</span> <strong class="text-slate-800">90 minutos</strong></div>
+            <div class="flex justify-between"><span>Precio base:</span> <strong class="text-emerald-700 font-bold">18€ / pers</strong></div>
+          </div>
+          <button data-select-plan="ciervo" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white font-display font-bold text-xs tracking-wider transition flex items-center justify-center gap-1.5">
+            <span>SELECCIONAR</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 4: Pack Todo Incluido -->
+      <div data-category="adrenalina" class="bg-gradient-to-b from-emerald-800 to-forest-900 text-white rounded-3xl p-6 shadow-2xl border border-emerald-500/30 flex flex-col justify-between hover:-translate-y-1.5 transition-transform duration-300 relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-28 h-28 bg-mint/10 rounded-full blur-xl"></div>
+        
+        <div>
+          <div class="w-12 h-12 rounded-2xl bg-mint/20 text-mint flex items-center justify-center mb-5">
+            <i data-lucide="crown" class="w-6 h-6 stroke-[2.2]"></i>
+          </div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-mint bg-emerald-700/60 px-2.5 py-1 rounded-full">Top Ventas</span>
+            <span class="text-xs font-semibold text-emerald-200/80">Experiencia Completa</span>
+          </div>
+          <h3 class="font-display font-bold text-xl text-white mb-2">Aventura Total</h3>
+          <p class="text-emerald-100/80 text-sm leading-relaxed mb-6">
+            Acceso ilimitado durante toda la jornada: tirolinas, puentes, vía ferrata y visita al santuario de fauna.
+          </p>
+        </div>
+
+        <div>
+          <div class="space-y-1.5 py-3 border-t border-emerald-700/50 text-xs text-emerald-200/80 mb-4">
+            <div class="flex justify-between"><span>Acceso:</span> <strong class="text-white">Día completo</strong></div>
+            <div class="flex justify-between"><span>Equipo:</span> <strong class="text-white">Arnés Pro + Casco</strong></div>
+            <div class="flex justify-between"><span>Precio base:</span> <strong class="text-mint font-bold">38€ / pers</strong></div>
+          </div>
+          <button data-select-plan="campamento" class="w-full py-2.5 rounded-xl bg-mint hover:bg-emerald-400 text-forest-950 font-display font-bold text-xs tracking-wider transition flex items-center justify-center gap-1.5 shadow-lg shadow-mint/20">
+            <span>SELECCIONAR PACK</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ================= FORMULARIO DE RESERVA / VEN A DISFRUTAR ================= -->
+  <section id="reserva-section" class="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-24">
+    
+    <div class="bg-white rounded-[2.5rem] lg:rounded-[3rem] p-8 sm:p-12 lg:p-16 shadow-2xl border border-slate-100">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        
+        <!-- Left Info & Benefits Column -->
+        <div class="lg:col-span-5">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold mb-4">
+            <i data-lucide="ticket" class="w-3.5 h-3.5"></i> RESERVA ONLINE INMEDIATA
+          </div>
+
+          <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-slate-900 leading-tight">
+            Ven a Disfrutar con Nosotros
+          </h2>
+
+          <div class="w-16 h-1.5 bg-coral rounded-full mt-4 mb-6"></div>
+
+          <p class="text-slate-600 text-base leading-relaxed mb-8">
+            Reserva tu visita en menos de 2 minutos. Asegura tus arneses y horarios preferentes. Si el clima no acompaña, puedes cambiar la fecha sin coste alguno.
+          </p>
+
+          <!-- Benefits List -->
+          <div class="space-y-4 mb-8">
+            <div class="flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i data-lucide="check" class="w-4 h-4 stroke-[3]"></i>
+              </div>
+              <div>
+                <strong class="font-display font-semibold text-slate-800 text-sm block">Cancelación flexible gratuita</strong>
+                <span class="text-xs text-slate-500">Cancela o cambia tu fecha hasta 24h antes sin penalizaciones.</span>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i data-lucide="shield" class="w-4 h-4 stroke-[3]"></i>
+              </div>
+              <div>
+                <strong class="font-display font-semibold text-slate-800 text-sm block">Seguro de accidentes incluido</strong>
+                <span class="text-xs text-slate-500">Cobertura total con equipo homologado Petzl & Camp.</span>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-3.5">
+              <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i data-lucide="clock" class="w-4 h-4 stroke-[3]"></i>
+              </div>
+              <div>
+                <strong class="font-display font-semibold text-slate-800 text-sm block">Confirmación digital instantánea</strong>
+                <span class="text-xs text-slate-500">Recibe tu pase con código QR directo a tu smartphone.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Live Total Box -->
+          <div class="p-6 rounded-2xl bg-forest-900 text-white shadow-xl border border-emerald-500/20">
+            <span class="text-xs uppercase font-bold text-mint tracking-wider block mb-1">Presupuesto Estimado</span>
+            <div class="flex items-baseline justify-between">
+              <span id="booking-summary-plan" class="text-sm text-emerald-200/80">Pack Aventura Total × 2 pers.</span>
+              <span id="booking-total-price" class="font-display font-black text-3xl text-white">76€</span>
+            </div>
+            <span class="text-[11px] text-emerald-300/60 block mt-2">IVA y alquiler de equipo de seguridad incluidos. Pago seguro a la llegada.</span>
+          </div>
+
+        </div>
+
+        <!-- Right: Interactive Form -->
+        <div class="lg:col-span-7 bg-slate-50/80 p-8 sm:p-10 rounded-3xl border border-slate-200/80 shadow-sm">
+          
+          <form id="booking-form" class="space-y-6">
+            
+            <!-- Personal Info (Name & Email) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label for="booking-name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Nombre Completo *
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                  </div>
+                  <input type="text" id="booking-name" required placeholder="Ej. Carlos Mendoza" class="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 text-sm focus:border-emerald-500 transition">
+                </div>
+              </div>
+
+              <div>
+                <label for="booking-email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Correo Electrónico *
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="mail" class="w-4 h-4"></i>
+                  </div>
+                  <input type="email" id="booking-email" required placeholder="tucorreo@ejemplo.com" class="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 text-sm focus:border-emerald-500 transition">
+                </div>
+              </div>
+            </div>
+
+            <!-- Phone & Visit Date -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label for="booking-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Teléfono de Contacto *
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="phone" class="w-4 h-4"></i>
+                  </div>
+                  <input type="tel" id="booking-phone" required placeholder="+34 600 000 000" class="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 text-sm focus:border-emerald-500 transition">
+                </div>
+              </div>
+
+              <div>
+                <label for="booking-date" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Fecha de la Visita *
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="calendar" class="w-4 h-4"></i>
+                  </div>
+                  <input type="date" id="booking-date" required class="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 text-sm focus:border-emerald-500 transition">
+                </div>
+              </div>
+            </div>
+
+            <!-- Experience & Adventurers Count -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label for="booking-experience" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Circuito / Experiencia *
+                </label>
+                <div class="relative">
+                  <select id="booking-experience" class="w-full px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-800 text-sm focus:border-emerald-500 transition appearance-none">
+                    <option value="campamento">Pack Aventura Total (38€/p)</option>
+                    <option value="tirolina">Tirolina Superman 600m (28€/p)</option>
+                    <option value="puente">Puente Tibetano (24€/p)</option>
+                    <option value="ciervo">Santuario Fauna Silvestre (18€/p)</option>
+                  </select>
+                  <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  Número de Aventureros
+                </label>
+                <div class="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden p-1">
+                  <button type="button" id="btn-count-minus" aria-label="Restar persona" class="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-lg transition">
+                    -
+                  </button>
+                  <input type="text" id="booking-count" readonly value="2" class="w-full text-center font-display font-bold text-base text-slate-900 border-none bg-transparent">
+                  <button type="button" id="btn-count-plus" aria-label="Sumar persona" class="w-10 h-10 flex items-center justify-center rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold text-lg transition">
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional Extras Checkboxes -->
+            <div class="pt-2 border-t border-slate-200 space-y-3">
+              <span class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Servicios Adicionales Opcionales</span>
+              
+              <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-300 transition">
+                <input type="checkbox" id="booking-guide" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+                <div class="text-xs">
+                  <span class="font-bold text-slate-800">Monitor Guía Privado Exclusivo (+15€ total)</span>
+                  <p class="text-slate-500">Un monitor dedicado al 100% para tu grupo durante todo el recorrido.</p>
+                </div>
+              </label>
+
+              <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-300 transition">
+                <input type="checkbox" id="booking-lunch" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+                <div class="text-xs">
+                  <span class="font-bold text-slate-800">Almuerzo Picnic Orgánico de la Finca (+9€ / pers)</span>
+                  <p class="text-slate-500">Bocadillo gourmet artesano, fruta fresca del valle, frutos secos y bebida.</p>
+                </div>
+              </label>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-display font-extrabold text-base tracking-wide shadow-xl shadow-emerald-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2">
+              <i data-lucide="send" class="w-5 h-5"></i>
+              <span>CONFIRMAR MI RESERVA</span>
+            </button>
+
+            <p class="text-[11px] text-center text-slate-400">
+              Al confirmar aceptas nuestras normas de seguridad en el parque y política ambiental de residuo cero.
+            </p>
+
+          </form>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ================= SEGURIDAD Y COMPROMISO ================= -->
+  <section id="seguridad" class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+      
+      <div class="p-8 rounded-3xl bg-forest-800/60 border border-emerald-500/20 backdrop-blur-md">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-mint flex items-center justify-center mb-5">
+          <i data-lucide="shield-alert" class="w-6 h-6"></i>
+        </div>
+        <h3 class="font-display font-bold text-xl mb-2">Línea de Vida Continua</h3>
+        <p class="text-sm text-emerald-200/70 leading-relaxed">
+          Sistema inteligente SafeRoller donde es técnicamente imposible desengancharse una vez iniciado el circuito en altura.
+        </p>
+      </div>
+
+      <div class="p-8 rounded-3xl bg-forest-800/60 border border-emerald-500/20 backdrop-blur-md">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-mint flex items-center justify-center mb-5">
+          <i data-lucide="leaf" class="w-6 h-6"></i>
+        </div>
+        <h3 class="font-display font-bold text-xl mb-2">Protección de los Árboles</h3>
+        <p class="text-sm text-emerald-200/70 leading-relaxed">
+          Plataformas fijadas con abrazaderas de presión sin clavos ni perforaciones, respetando el crecimiento y savia de cada árbol.
+        </p>
+      </div>
+
+      <div class="p-8 rounded-3xl bg-forest-800/60 border border-emerald-500/20 backdrop-blur-md">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-mint flex items-center justify-center mb-5">
+          <i data-lucide="award" class="w-6 h-6"></i>
+        </div>
+        <h3 class="font-display font-bold text-xl mb-2">Monitores Titulados TD2</h3>
+        <p class="text-sm text-emerald-200/70 leading-relaxed">
+          Equipo técnico titulado en rescate en altura y primeros auxilios con briefing formativo inicial obligatorio.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= MODAL DE CONFIRMACIÓN DE TICKET ================= -->
+  <div id="confirmation-modal" class="fixed inset-0 z-50 bg-forest-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[2.5rem] max-w-lg w-full p-8 sm:p-10 shadow-2xl border border-slate-100 relative animate-float">
+      
+      <!-- Close button -->
+      <button id="btn-close-modal" aria-label="Cerrar modal" class="absolute top-6 right-6 p-2 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <!-- Success icon -->
+      <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-5">
+        <i data-lucide="check-check" class="w-8 h-8 stroke-[2.5]"></i>
+      </div>
+
+      <div class="text-center mb-6">
+        <span class="text-xs font-bold uppercase tracking-widest text-emerald-600 block mb-1">¡Reserva Confirmada con Éxito!</span>
+        <h3 class="font-display font-extrabold text-2xl text-slate-900">Pase Digital de Aventura</h3>
+        <p class="text-xs text-slate-500 mt-1">Presenta este comprobante en la caseta de recepción el día de tu llegada.</p>
+      </div>
+
+      <!-- Ticket Card -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6 text-xs space-y-3 font-mono">
+        <div class="flex justify-between items-center pb-2 border-b border-dashed border-slate-200">
+          <span class="text-slate-500 font-sans">CÓDIGO DE RESERVA:</span>
+          <span id="ticket-code" class="font-bold text-emerald-700 text-sm">SLV-948201</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500 font-sans">Titular:</span>
+          <span id="ticket-name" class="font-bold text-slate-800">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500 font-sans">Email:</span>
+          <span id="ticket-email" class="text-slate-800 truncate max-w-[200px]">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500 font-sans">Teléfono:</span>
+          <span id="ticket-phone" class="text-slate-800">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500 font-sans">Fecha de Visita:</span>
+          <span id="ticket-date" class="font-bold text-slate-800">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500 font-sans">Circuito:</span>
+          <span id="ticket-activity" class="font-bold text-emerald-800">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500 font-sans">Aventureros:</span>
+          <span id="ticket-people" class="font-bold text-slate-800">-</span>
+        </div>
+        <div class="flex justify-between items-center pt-2 border-t border-dashed border-slate-200 font-sans">
+          <span class="font-bold text-slate-700">Total a abonar en taquilla:</span>
+          <span id="ticket-total" class="font-display font-black text-lg text-emerald-700">-</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-3">
+        <button id="btn-download-ticket" class="flex-1 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-display font-bold text-xs tracking-wider transition flex items-center justify-center gap-2">
+          <i data-lucide="printer" class="w-4 h-4"></i> Guardar / Imprimir
+        </button>
+        <button onclick="document.getElementById('confirmation-modal').classList.add('hidden')" class="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-display font-bold text-xs tracking-wider transition">
+          Entendido
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-forest-950 text-white border-t border-emerald-900/30 pt-16 pb-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        
+        <!-- Col 1: Brand -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500 text-forest-950 flex items-center justify-center">
+              <i data-lucide="trees" class="w-5 h-5"></i>
+            </div>
+            <span class="font-display font-bold text-lg text-white">SILVA Aventura</span>
+          </div>
+          <p class="text-xs text-emerald-200/60 leading-relaxed">
+            Parque de ocio activo y reserva de conservación en el Valle de los Robles. Comprometidos con el desarrollo local y la protección animal.
+          </p>
+        </div>
+
+        <!-- Col 2: Horarios -->
+        <div>
+          <h4 class="font-display font-bold text-sm text-mint uppercase tracking-wider mb-3">Horarios de Apertura</h4>
+          <ul class="text-xs text-emerald-200/70 space-y-2">
+            <li><strong>Lunes a Viernes:</strong> 10:00 - 19:30</li>
+            <li><strong>Sábados y Domingos:</strong> 09:30 - 20:30</li>
+            <li><strong>Festivos:</strong> Abierto toda la jornada</li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Ubicación -->
+        <div>
+          <h4 class="font-display font-bold text-sm text-mint uppercase tracking-wider mb-3">Localización</h4>
+          <p class="text-xs text-emerald-200/70 leading-relaxed">
+            Carretera Forestal del Robledo, Km 14.5<br>
+            28490 Sierra Verde, España<br>
+            <span class="text-emerald-400">Parking gratuito con puntos de carga eléctrica.</span>
+          </p>
+        </div>
+
+        <!-- Col 4: Contacto directo -->
+        <div>
+          <h4 class="font-display font-bold text-sm text-mint uppercase tracking-wider mb-3">Atención al Visitante</h4>
+          <div class="text-xs text-emerald-200/70 space-y-2">
+            <p class="flex items-center gap-2"><i data-lucide="phone" class="w-3.5 h-3.5 text-mint"></i> +34 900 123 456</p>
+            <p class="flex items-center gap-2"><i data-lucide="mail" class="w-3.5 h-3.5 text-mint"></i> reservas@silvapark.es</p>
+            <p class="flex items-center gap-2"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-mint"></i> Certificado ISO 14001</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="pt-8 border-t border-emerald-900/40 flex flex-col sm:flex-row items-center justify-between text-xs text-emerald-300/40 gap-4">
+        <p>© 2026 Silva Parque de Aventuras. Todos los derechos reservados.</p>
+        <div class="flex gap-6">
+          <a href="#" class="hover:text-emerald-200 transition">Aviso Legal</a>
+          <a href="#" class="hover:text-emerald-200 transition">Política de Privacidad</a>
+          <a href="#" class="hover:text-emerald-200 transition">Normas del Parque</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- App Scripts -->
+  <script src="js/three-scene.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
